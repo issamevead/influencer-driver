@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+from contextlib import suppress
 import json
 import sched
 import time
@@ -43,7 +44,6 @@ def needed_time():
 
 def facebook_robot():
     """Run the Facebook robot"""
-
     for profile in get_profiles("facebook"):
         facebook = Facebook(**profile)
         facebook.run()

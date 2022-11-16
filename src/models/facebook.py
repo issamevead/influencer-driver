@@ -32,10 +32,20 @@ class Facebook(Driver):
     PASSWORD_SELECTOR: str = "#pass"
     CHECKER_SELECTOR: str = "a[aria-label='Home']"
 
-    def __init__(self, username: str, password: str, color: Color = Color.LIGHTBLUE):
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        proxy: str,
+        color: Color = Color.LIGHTBLUE,
+    ):
         profile_path = get_profile_path(ROOT_PROFILE, username)
 
-        Driver.__init__(self, profile_path)
+        Driver.__init__(
+            self,
+            profile_path,
+            proxy,
+        )
         self.username = username
         self.password = password
         self.name = self.username.split("@")[0]
@@ -150,7 +160,7 @@ class Facebook(Driver):
             self.blocked_status(self.username)
             self.quit()
             return
-        self.human_scroll(randint(45,60), 2)
+        self.human_scroll(randint(45, 60), 2)
         self.update_local_cookie()
         self.update_mg_cookie(self.username, PageId.FACEBOOK.value)
         self.quit()

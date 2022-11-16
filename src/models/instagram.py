@@ -31,13 +31,16 @@ class Instagram(Driver):
     password_selector: str = "input[name='password']"
     checker_selector: str = "//div[@class='_aac4 _aac5 _aac6']"
 
-    def __init__(self, username: str, password: str, color: Color = Color.PURPLE):
+    def __init__(
+        self, username: str, password: str, proxy: str, color: Color = Color.PURPLE
+    ):
         profile_path = get_profile_path(ROOTE_PROFILE, username)
 
-        Driver.__init__(self, profile_path)
+        Driver.__init__(self, profile_path, proxy)
         self.username = username
         self.password = password
         self.color = color
+        self.blocked = False
         if self.profile_path is None:
             self.profile_path = f"{ROOTE_PROFILE}/{username}"
         for _ in range(3):

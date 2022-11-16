@@ -44,15 +44,19 @@ class RequestBase:
 
 class Driver(ABC):
     profile_path: str
+    proxy: str
     color: str
     user_agent: str = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/78.4"
     )
     browser = None
 
-    def __init__(self, profile_path: Optional[str] = None, color=Color.RED):
+    def __init__(
+        self, proxy: Optional[str], profile_path: Optional[str] = None, color=Color.RED
+    ):
         self.profile_path = profile_path
         self.color = color
+        self.proxy = proxy
         self.browser = self._connect()
 
     def _connect(self):
@@ -74,10 +78,9 @@ class Driver(ABC):
             "profile.default_content_setting_values.notifications", 1
         )
 
-        proxy = get_env("PROXY")
-        if proxy:
+        if self.proxy not in (None, ""):
             options.proxy = Proxy(
-                {"proxyType": "MANUAL", "socksProxy": proxy, "socksVersion": 5}
+                {"proxyType": "MANUAL", "socksProxy": self.proxy, "socksVersion": 5}
             )
 
         if self.profile_path:
@@ -94,10 +97,13 @@ class Driver(ABC):
 
     def clean_tmp_and_logs(self):
         """Clean tmp files"""
-        shutil.rmtree(Path(self.browser.caps.get("moz:profile")))
-        driver_log = "geckodriver.log"
-        if path_exist(driver_log):
-            os.remove(driver_log)
+        try:
+            shutil.rmtree(Path(self.browser.caps.get("moz:profile")))
+            driver_log = "geckodriver.log"
+            if path_exist(driver_log):
+                os.remove(driver_log)
+        except FileNotFoundError as e:
+            Logs().warn(f"{e.strerror} - {e.filename}")
 
     def kill_driver(self):
         self.browser.service.process.send_signal(15)

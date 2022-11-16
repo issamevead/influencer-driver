@@ -2,29 +2,35 @@
     "instagram": [
         {
             "username": "hamza_kar132",
-            "password": "r62DUra9Q33nXkA8"
+            "password": "r62DUra9Q33nXkA8",
+            "proxy": null
         },
         {
             "username": "edwardnewgate_4",
-            "password": "37004FB915"
+            "password": "37004FB915",
+            "proxy": null
         },
         {
             "username": "maryem_kar123",
-            "password": "Nj7JCyCN@Kdmmytej"
+            "password": "Nj7JCyCN@Kdmmytej",
+            "proxy": null
         },
         {
             "username": "sarra_kar245",
-            "password": "j98nxGxVf@B75M3BZ"
+            "password": "j98nxGxVf@B75M3BZ",
+            "proxy": null
         },
         {
             "username": "ihssan_mojahid",
-            "password": "bK7RNFzZrouju5st@IG"
+            "password": "bK7RNFzZrouju5st@IG",
+            "proxy": null
         }
     ],
     "facebook": [
         {
             "username": "anissmansor891@gmail.com",
-            "password": "Fay66&yH@WNT12gZ3"
+            "password": "Fay66&yH@WNT12gZ3",
+            "proxy": null
         }
     ]
 }
