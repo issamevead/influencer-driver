@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 from log.logger import Color, Logs
 from selenium.webdriver.common.proxy import Proxy
 from seleniumwire import webdriver
-
 from utils.enums import AppType, DeviceId, Status, ZoneId
 from utils.util import get_env, kill_process, path_exist
 
@@ -52,7 +51,10 @@ class Driver(ABC):
     browser = None
 
     def __init__(
-        self, proxy: Optional[str], profile_path: Optional[str] = None, color=Color.RED
+        self,
+        profile_path: Optional[str] = None,
+        proxy: Optional[str] = None,
+        color=Color.RED,
     ):
         self.profile_path = profile_path
         self.color = color
@@ -79,18 +81,21 @@ class Driver(ABC):
         )
 
         if self.proxy not in (None, ""):
-            options.proxy = Proxy(
-                {"proxyType": "MANUAL", "socksProxy": self.proxy, "socksVersion": 5}
-            )
+            proxy_config = {
+                "proxyType": "MANUAL",
+                "socksVersion": 5,
+                "socksProxy": self.proxy,
+            }
+            options.proxy = Proxy(proxy_config)
+        config = {"options": options, "executable_path": DRIVER_PATH}
 
         if self.profile_path:
-            return webdriver.Firefox(
-                options=options,
-                firefox_profile=self.profile_path,
-                executable_path=DRIVER_PATH,
-            )
+            config["firefox_profile"] = self.profile_path
 
-        return webdriver.Firefox(options=options, executable_path=DRIVER_PATH)
+        if "seleniumwire" in webdriver.Firefox.__module__:
+            # auto_config set to False to force driver follow the Selenium constructor.
+            config["seleniumwire_options"] = {"auto_config": True}
+        return webdriver.Firefox(**config)
 
     def close(self):
         self.browser.close()

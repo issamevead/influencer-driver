@@ -46,6 +46,7 @@ class Facebook(Driver):
             profile_path,
             proxy,
         )
+
         self.username = username
         self.password = password
         self.name = self.username.split("@")[0]
