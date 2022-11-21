@@ -141,6 +141,11 @@ class Facebook(Driver):
             fb_dtsg = [
                 r for r in body_contain_fb_dtsg[0].decode().split("&") if "fb_dtsg" in r
             ][0]
+            # for e in self.browser.requests:
+            #     if e.path == "/api/graphql/":
+            #         headers = e.headers
+            #         content = e.params
+            #         break
             initial_cookies = initial_cookies + [fb_dtsg]
             return ";".join(initial_cookies)
         return None
@@ -161,7 +166,7 @@ class Facebook(Driver):
             self.blocked_status(self.username)
             self.quit()
             return
-        self.human_scroll(randint(45, 60), 2)
-        self.update_local_cookie()
+        # self.human_scroll(randint(45, 60), 2)
+        # self.update_local_cookie()
         self.update_mg_cookie(self.username, PageId.FACEBOOK.value)
         self.quit()
