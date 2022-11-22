@@ -1,15 +1,15 @@
+import time
 from contextlib import suppress
 from random import randint
-import time
 
 from dotenv import load_dotenv
-from log.logger import Logs, Color
+from log.logger import Color, Logs
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from utils.enums import PageId
-from utils.util import get_env, human_writing, get_profile_path, json_extract
+from utils.util import get_env, get_profile_path, human_writing
 
 from models.driver import Driver
 
@@ -82,10 +82,17 @@ class Instagram(Driver):
         return False
 
     def get_cookies(self):
-        cookies = self.browser.get_cookies()
-        names = json_extract(cookies, "name")
-        values = json_extract(cookies, "value")
-        return ";".join([f"{name}={value}" for name, value in zip(names, values)])
+        # cookies = self.browser.get_cookies()
+        # names = json_extract(cookies, "name")
+        # values = json_extract(cookies, "value")
+        # return ";".join([f"{name}={value}" for name, value in zip(names, values)])
+        with suppress(IndexError):
+            for e in self.browser.requests:
+                if e.path == "/api":
+                    headers = dict(e.headers._headers)
+                    content = e.params
+                    return headers, content
+        return None, None
 
     def is_connected(self):
         timeout = DELAY
@@ -96,6 +103,9 @@ class Instagram(Driver):
                 )
                 return True
             timeout += 5
+            if "/challenge/" in self.browser.current_url:
+                self.blocked = True
+                return False
         return False
 
     def run(self):
@@ -103,6 +113,15 @@ class Instagram(Driver):
         connected = self.is_connected()
         if not connected:
             self.connect()
+        if self.blocked:
+            # TODO: handle blocked account
+            logs.info(
+                f"{self.color.format(self.__class__.__name__)} | {Color.DARK_YELLOW.format(self.username)} account is {Color.RED.format('blocked')}"
+            )
+            self.blocked_status(self.username)
+            self.quit()
+            logs.info("Next update will until you unclock it")
+            return
         time.sleep(10)
         self.human_scroll(randint(45, 60), 2)
         self.update_local_cookie()

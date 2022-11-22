@@ -135,20 +135,19 @@ class Facebook(Driver):
         if not all(cond):
             return None
         with suppress(IndexError):
-            body_contain_fb_dtsg = [
-                b.body for b in self.browser.requests if b"fb_dtsg" in b.body
-            ]
-            fb_dtsg = [
-                r for r in body_contain_fb_dtsg[0].decode().split("&") if "fb_dtsg" in r
-            ][0]
-            # for e in self.browser.requests:
-            #     if e.path == "/api/graphql/":
-            #         headers = e.headers
-            #         content = e.params
-            #         break
-            initial_cookies = initial_cookies + [fb_dtsg]
-            return ";".join(initial_cookies)
-        return None
+            # body_contain_fb_dtsg = [
+            #     b.body for b in self.browser.requests if b"fb_dtsg" in b.body
+            # ]
+            # fb_dtsg = [
+            #     r for r in body_contain_fb_dtsg[0].decode().split("&") if "fb_dtsg" in r
+            # ][0]
+            # initial_cookies = initial_cookies + [fb_dtsg]
+            for e in self.browser.requests:
+                if e.path == "/api/graphql/":
+                    headers = dict(e.headers._headers)
+                    content = e.params
+                    return headers, content
+        return None, None
 
     def run(self):
         """Run browser and connect to facebook
@@ -166,7 +165,7 @@ class Facebook(Driver):
             self.blocked_status(self.username)
             self.quit()
             return
-        # self.human_scroll(randint(45, 60), 2)
-        # self.update_local_cookie()
+        self.human_scroll(randint(45, 60), 2)
+        self.update_local_cookie()
         self.update_mg_cookie(self.username, PageId.FACEBOOK.value)
         self.quit()

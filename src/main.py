@@ -76,38 +76,38 @@ if __name__ == "__main__":
     data = db.read_all({})
     profiles_facebook = get_profiles("facebook")
     profiles_instagram = get_profiles("instagram")
-
-    for profile in profiles_facebook:
-        last_update = get_item(data, profile.get("username"))
-        if last_update:
-            now = datetime.datetime.now()
-            wait = now - datetime.datetime.strptime(last_update, "%Y-%m-%d %H:%M:%S")
-            if wait.total_seconds() < needed_time():
-                logs.info(
-                    f"Facebook | {profile.get('username')} will be updated in {round(wait.total_seconds()/3600,2)} Hour(s)"
-                )
-                s.enter(wait.total_seconds(), 1, facebook_robot, argument=(profile,))
-        else:
-            logs.info(
-                f"Facebook | {profile.get('username')} will be updated in {round(wait.total_seconds()/3600,2)} Hour(s)"
-            )
-            s.enter(randint(60, 120), 1, facebook_robot, argument=(profile,))
+    date_format = "%Y-%m-%d %H:%M:%S"
 
     for profile in profiles_instagram:
         last_update = get_item(data, profile.get("username"))
+        message = "Instagram | {} will be updated in {} Hour(s)"
         if last_update:
-            wait = datetime.datetime.now() - datetime.datetime.strptime(
-                last_update, "%Y-%m-%d %H:%M:%S"
-            )
-            if wait.total_seconds() < needed_time():
+            now = datetime.datetime.now()
+            last_update = datetime.datetime.strptime(last_update, date_format)
+            wait = (now - last_update).seconds
+            if wait < needed_time():
                 logs.info(
-                    f"Instagram | {profile.get('username')} will be updated in {round(wait.total_seconds()/3600,2)} Hour(s)"
+                    message.format(profile.get("username"), round(wait / 3600, 2))
                 )
-                s.enter(wait.total_seconds(), 1, instagram_robot, argument=(profile,))
-        else:
-            logs.info(
-                f"Instagram | {profile.get('username')} will be updated in {round(wait.total_seconds()/3600,2)} Hour(s)"
-            )
-            s.enter(randint(60, 120), 1, instagram_robot, argument=(profile,))
+                s.enter(wait, 1, instagram_robot, argument=(profile,))
+                continue
+        logs.info(f"Instagram {profile.get('username')} updated in few seconds")
+        s.enter(0, 1, instagram_robot, argument=(profile,))
+
+    for profile in profiles_facebook:
+        last_update = get_item(data, profile.get("username"))
+        message = "Facebook | {} will be updated in {} Hour(s)"
+        if last_update:
+            now = datetime.datetime.now()
+            last_update = datetime.datetime.strptime(last_update, date_format)
+            wait = (now - last_update).seconds
+            if wait < needed_time():
+                logs.info(
+                    message.format(profile.get("username"), round(wait / 3600, 2))
+                )
+                s.enter(wait, 1, facebook_robot, argument=(profile,))
+                continue
+        logs.info(f"Facebook {profile.get('username')} updated in few seconds")
+        s.enter(0, 1, facebook_robot, argument=(profile,))
 
     s.run()

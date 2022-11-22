@@ -133,8 +133,8 @@ class Driver(ABC):
             username(str): A row identifier which is the username of a profile
             page_id(str): the social website type
         """
-        cookies = self.get_cookies()
-        if cookies is None:
+        headers, content = self.get_cookies()
+        if (headers is None) or (content is None):
             return
         profile_exist = cookieDB.select_(
             {"$and": [{"profile_id": username}, {"page_id": page_id}]}
@@ -143,7 +143,8 @@ class Driver(ABC):
             cookieDB.update(
                 {"profile_id": username},
                 {
-                    "cookies": cookies,
+                    "headers": headers,
+                    "content": content,
                     "last_update": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "number_of_executions": 0,
                 },
