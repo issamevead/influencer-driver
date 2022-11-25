@@ -1,0 +1,7 @@
+selenium
+selenium-wire
+python-dotenv
+pymongo
+sqlalchemy 
+pandas
+python-dotenv
