@@ -49,15 +49,14 @@ def get_item(data: list, user: str) -> dict:
     """Get the item from the database"""
     for e in data:
         if e.get("profile_id") == user:
-            return e.get("last_update")
+            return e
     return None
 
 
 def facebook_robot(profile: dict, db: TextMongoDatabase):
     """Run the Facebook robot"""
-    data = db.read_all({"status": 1})
-    unblocked_profile = get_item(data, profile.get("username"))
-    if unblocked_profile is None:
+    unblocked_profile = db.read_all({"profile_id": profile.get("username")})
+    if unblocked_profile and unblocked_profile.get("status") != 1:
         logs.info(
             f"{profile.get('username')} {Color.RED.format('Blocked')}], try to unlock it"
         )
@@ -71,9 +70,8 @@ def facebook_robot(profile: dict, db: TextMongoDatabase):
 
 def instagram_robot(profile: dict, db: TextMongoDatabase):
     """Run the Instagram robot"""
-    data = db.read_all({"status": 1})
-    unblocked_profile = get_item(data, profile.get("username"))
-    if unblocked_profile is None:
+    unblocked_profile = db.read_all({"profile_id": profile.get("username")})
+    if unblocked_profile and unblocked_profile.get("status") != 1:
         logs.info(
             f"{profile.get('username')} {Color.RED.format('Blocked')}], try to unlock it"
         )
@@ -86,7 +84,7 @@ def instagram_robot(profile: dict, db: TextMongoDatabase):
 
 
 if __name__ == "__main__":
-    data = db.read_all({"status": 1})
+    data = db.read_all({})
     profiles_facebook = get_profiles("facebook")
     profiles_instagram = get_profiles("instagram")
     date_format = "%Y-%m-%d %H:%M:%S"
@@ -94,10 +92,19 @@ if __name__ == "__main__":
     for profile in profiles_facebook:
         unblocked_profile = get_item(data, profile.get("username"))
         message = "Facebook | {} will be updated in {} Hour(s)"
+
         if unblocked_profile is None:
+            logs.info(f"Facebook {profile.get('username')} updated in few seconds")
+            s.enter(0, 1, facebook_robot, argument=(profile, db))
             continue
+
+        if unblocked_profile.get("status") != 1:
+            continue
+
         now = datetime.datetime.now()
-        last_update = datetime.datetime.strptime(unblocked_profile, date_format)
+        last_update = datetime.datetime.strptime(
+            unblocked_profile.get("last_update"), date_format
+        )
         wait = (now - last_update).seconds
         idle_time = needed_time()
         next_run = idle_time - wait
@@ -106,16 +113,26 @@ if __name__ == "__main__":
                 message.format(profile.get("username"), round(next_run / 3600, 2))
             )
             s.enter(next_run, 1, facebook_robot, argument=(profile, db))
+            continue
         logs.info(f"Facebook {profile.get('username')} updated in few seconds")
         s.enter(0, 1, facebook_robot, argument=(profile, db))
 
     for profile in profiles_instagram:
         unblocked_profile = get_item(data, profile.get("username"))
         message = "Instagram | {} will be updated in {} Hour(s)"
+
         if unblocked_profile is None:
+            logs.info(f"Facebook {profile.get('username')} updated in few seconds")
+            s.enter(0, 1, facebook_robot, argument=(profile, db))
             continue
+
+        if unblocked_profile.get("status") != 1:
+            continue
+
         now = datetime.datetime.now()
-        last_update = datetime.datetime.strptime(unblocked_profile, date_format)
+        last_update = datetime.datetime.strptime(
+            unblocked_profile.get("last_update"), date_format
+        )
         wait = (now - last_update).seconds
         idle_time = needed_time()
         next_run = idle_time - wait
@@ -124,6 +141,7 @@ if __name__ == "__main__":
                 message.format(profile.get("username"), round(next_run / 3600, 2))
             )
             s.enter(next_run, 1, instagram_robot, argument=(profile, db))
+            continue
         logs.info(f"Instagram {profile.get('username')} updated in few seconds")
         s.enter(0, 1, instagram_robot, argument=(profile, db))
 
