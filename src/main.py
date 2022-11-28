@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import ast
-from contextlib import suppress
 import datetime
 import json
-from random import randint
+
 import sched
 import time
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-from log.logger import Logs
+from log.logger import Logs, Color
 from models.facebook import Facebook
 from models.instagram import Instagram
 from utils.util import get_env, time_bound, to_seconds
@@ -54,28 +53,36 @@ def get_item(data: list, user: str) -> dict:
     return None
 
 
-def facebook_robot(profile: dict):
+def facebook_robot(profile: dict, db: TextMongoDatabase):
     """Run the Facebook robot"""
+    data = db.read_all({"status": 1})
+    unblocked_profile = get_item(data, profile.get("username"))
+    if unblocked_profile is None:
+        logs.info(
+            f"{profile.get('username')} {Color.RED.format('Blocked')}], try to unlock it"
+        )
+        return
     facebook = Facebook(**profile)
     facebook.run()
     next_run = needed_time()
     logs.info(f"Next update will be in {next_run/3600} Hour(s)\n")
-    s.enter(next_run, 1, facebook_robot, argument=(profile,))
+    s.enter(next_run, 1, facebook_robot, argument=(profile, db))
 
 
-def instagram_robot(profile: dict):
+def instagram_robot(profile: dict, db: TextMongoDatabase):
     """Run the Instagram robot"""
+    data = db.read_all({"status": 1})
+    unblocked_profile = get_item(data, profile.get("username"))
+    if unblocked_profile is None:
+        logs.info(
+            f"{profile.get('username')} {Color.RED.format('Blocked')}], try to unlock it"
+        )
+        return
     instagram = Instagram(**profile)
     instagram.run()
     next_run = needed_time()
     logs.info(f"Next update will be in {next_run/3600} Hour(s)\n")
-    s.enter(next_run, 1, instagram_robot, argument=(profile,))
-
-
-def get_unblocked_profile():
-    data = db.read_all({"status": 1})
-    profiles_facebook = get_profiles("facebook")
-    profiles_instagram = get_profiles("instagram")
+    s.enter(next_run, 1, instagram_robot, argument=(profile, db))
 
 
 if __name__ == "__main__":
@@ -95,14 +102,16 @@ if __name__ == "__main__":
         idle_time = needed_time()
         next_run = idle_time - wait
         if next_run > 0:
-            logs.info(message.format(profile.get("username"), round(next_run / 3600, 2)))
-            s.enter(next_run, 1, facebook_robot, argument=(profile,))
+            logs.info(
+                message.format(profile.get("username"), round(next_run / 3600, 2))
+            )
+            s.enter(next_run, 1, facebook_robot, argument=(profile, db))
         logs.info(f"Facebook {profile.get('username')} updated in few seconds")
-        s.enter(0, 1, facebook_robot, argument=(profile,))
+        s.enter(0, 1, facebook_robot, argument=(profile, db))
 
     for profile in profiles_instagram:
         unblocked_profile = get_item(data, profile.get("username"))
-        message = "Facebook | {} will be updated in {} Hour(s)"
+        message = "Instagram | {} will be updated in {} Hour(s)"
         if unblocked_profile is None:
             continue
         now = datetime.datetime.now()
@@ -111,9 +120,11 @@ if __name__ == "__main__":
         idle_time = needed_time()
         next_run = idle_time - wait
         if next_run > 0:
-            logs.info(message.format(profile.get("username"), round(next_run / 3600, 2)))
-            s.enter(next_run, 1, instagram_robot, argument=(profile,))
+            logs.info(
+                message.format(profile.get("username"), round(next_run / 3600, 2))
+            )
+            s.enter(next_run, 1, instagram_robot, argument=(profile, db))
         logs.info(f"Instagram {profile.get('username')} updated in few seconds")
-        s.enter(0, 1, instagram_robot, argument=(profile,))
+        s.enter(0, 1, instagram_robot, argument=(profile, db))
 
     s.run()
