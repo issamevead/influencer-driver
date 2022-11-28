@@ -89,18 +89,14 @@ if __name__ == "__main__":
         message = "Facebook | {} will be updated in {} Hour(s)"
         if unblocked_profile is None:
             continue
-        if last_update:
-            now = datetime.datetime.now()
-            last_update = datetime.datetime.strptime(unblocked_profile, date_format)
-            wait = (now - last_update).seconds
-            idle_time = needed_time()
-            next_run = idle_time - wait
-            if next_run > 0:
-                logs.info(
-                    message.format(profile.get("username"), round(next_run / 3600, 2))
-                )
-                s.enter(next_run, 1, facebook_robot, argument=(profile,))
-                continue
+        now = datetime.datetime.now()
+        last_update = datetime.datetime.strptime(unblocked_profile, date_format)
+        wait = (now - last_update).seconds
+        idle_time = needed_time()
+        next_run = idle_time - wait
+        if next_run > 0:
+            logs.info(message.format(profile.get("username"), round(next_run / 3600, 2)))
+            s.enter(next_run, 1, facebook_robot, argument=(profile,))
         logs.info(f"Facebook {profile.get('username')} updated in few seconds")
         s.enter(0, 1, facebook_robot, argument=(profile,))
 
@@ -109,18 +105,14 @@ if __name__ == "__main__":
         message = "Facebook | {} will be updated in {} Hour(s)"
         if unblocked_profile is None:
             continue
-        if last_update:
-            now = datetime.datetime.now()
-            last_update = datetime.datetime.strptime(unblocked_profile, date_format)
-            wait = (now - last_update).seconds
-            idle_time = needed_time()
-            next_run = idle_time - wait
-            if next_run > 0:
-                logs.info(
-                    message.format(profile.get("username"), round(next_run / 3600, 2))
-                )
-                s.enter(next_run, 1, instagram_robot, argument=(profile,))
-                continue
+        now = datetime.datetime.now()
+        last_update = datetime.datetime.strptime(unblocked_profile, date_format)
+        wait = (now - last_update).seconds
+        idle_time = needed_time()
+        next_run = idle_time - wait
+        if next_run > 0:
+            logs.info(message.format(profile.get("username"), round(next_run / 3600, 2)))
+            s.enter(next_run, 1, instagram_robot, argument=(profile,))
         logs.info(f"Instagram {profile.get('username')} updated in few seconds")
         s.enter(0, 1, instagram_robot, argument=(profile,))
 
