@@ -91,7 +91,7 @@ def instagram_robot(profile: dict, db: TextMongoDatabase, dq: deque):
     """Run the Instagram robot"""
     dq.clear()
     # asyncio.run(mitmproxy.start())
-    mitmproxy.run()
+    mitmproxy.start()
     unblocked_profile = db.read_all({"profile_id": profile.get("username")})
     with suppress(AttributeError, IndexError):
         if unblocked_profile and unblocked_profile[0].get("status") != 1:
@@ -175,4 +175,3 @@ if __name__ == "__main__":
         s.enter(0, 1, instagram_robot, argument=(profile, db, dq))
 
     s.run()
-    

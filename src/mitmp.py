@@ -9,7 +9,8 @@ from utils.util import get_env
 log = Logs()
 load_dotenv()
 MITMHOST = get_env("MITMHOST")
-MITMPORT = get_env("MITMPORT")
+MITMPORT = int(get_env("MITMPORT"))
+CERT_PATH = "src/mitm-certs"
 
 
 class Addon(object):
@@ -28,10 +29,7 @@ class Addon(object):
 def run_mitm(dq: deque):
     async def process(dq):
         options = Options(
-            listen_host=MITMHOST,
-            listen_port=int(MITMPORT),
-            http2=True,
-            confdir="src/mitm-certs",
+            listen_host=MITMHOST, listen_port=MITMPORT, confdir=CERT_PATH, http2=True
         )
         asyncio.set_event_loop(asyncio.new_event_loop())
         # r = asyncio.new_event_loop()
