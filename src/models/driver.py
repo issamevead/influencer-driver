@@ -7,12 +7,13 @@ from datetime import datetime
 from hashlib import md5
 from pathlib import Path
 from typing import Optional
+from collections import deque
 
 from connectors.mongo_db import TextMongoDatabase
 from dotenv import load_dotenv
 from log.logger import Color, Logs
 from selenium.webdriver.common.proxy import Proxy
-from seleniumwire import webdriver
+from selenium import webdriver
 from utils.enums import AppType, DeviceId, Status, ZoneId
 from utils.util import get_env, kill_process, path_exist
 
@@ -31,6 +32,8 @@ class RequestBase:
     page_id: int
     headers: Optional[dict]
     content: Optional[dict]
+    method: str
+    url: str
     profile_id: int
     robot_id: int
     device_id: int
@@ -43,6 +46,7 @@ class RequestBase:
 
 
 class Driver(ABC):
+    dq: deque
     profile_path: str
     proxy: str
     color: str
@@ -53,50 +57,56 @@ class Driver(ABC):
 
     def __init__(
         self,
+        dq: deque,
         profile_path: Optional[str] = None,
         proxy: Optional[str] = None,
         color=Color.RED,
     ):
         self.profile_path = profile_path
+        self.mitmdumps = dq
         self.color = color
         self.proxy = proxy
         self.browser = self._connect()
 
     def _connect(self):
         options = webdriver.FirefoxOptions()
-        options.add_argument("--headless")
+        options = self.browser_configuration(options)
+        config = {"options": options, "executable_path": DRIVER_PATH}
+        if self.profile_path:
+            config["firefox_profile"] = self.profile_path
+        return webdriver.Firefox(**config)
 
+    def set_http_proxy(self, options: webdriver.FirefoxOptions, host: str, port: int):
+        options.set_capability("acceptInsecureCerts", True)
+        options.set_preference("network.proxy.type", 1)
+        options.set_preference("network.proxy.type", 1)
+        options.set_preference("network.proxy.ssl_port", port)
+        options.set_preference("network.proxy.ssl", host)
+        options.set_preference("network.proxy.http", host)
+
+    def browser_configuration(
+        self, options: webdriver.FirefoxOptions
+    ) -> webdriver.FirefoxOptions:
+        options.add_argument("--headless")
         options.add_argument("--disable-blink-features=AutomationControlled")
-        # options.add_argument("useAutomationExtension", False)
-        # options.add_argument("excludeSwitches", ["enable-automation"])
-        # options.add_argument("disable-infobars")
         options.set_preference("general.useragent.override", self.user_agent)
         options.set_preference("dom.webnotifications.serviceworker.enabled", False)
         options.set_preference("dom.webnotifications.enabled", False)
-        # options.set_preference("marionette", False)
-        # options.set_preference("useAutomationExtension", False)
-        # options.set_preference("dom.webdriver.enabled", False)
-        options.set_preference("network.proxy.type", 1)
         options.set_preference(
             "profile.default_content_setting_values.notifications", 1
         )
+        # set proxy for mitmproxy server.
+        self.set_http_proxy(options, "localhost", 4141)
+        return options
 
-        if self.proxy not in (None, ""):
-            proxy_config = {
-                "proxyType": "MANUAL",
-                "socksVersion": 5,
-                "socksProxy": self.proxy,
-            }
-            options.proxy = Proxy(proxy_config)
-        config = {"options": options, "executable_path": DRIVER_PATH}
-
-        if self.profile_path:
-            config["firefox_profile"] = self.profile_path
-
-        if "seleniumwire" in webdriver.Firefox.__module__:
-            # auto_config set to False to force driver follow the Selenium constructor.
-            config["seleniumwire_options"] = {"auto_config": True}
-        return webdriver.Firefox(**config)
+    def set_socks_proxy(self, options: webdriver.FirefoxOptions, proxy_: str):
+        proxy_config = {
+            "proxyType": "MANUAL",
+            "socksVersion": 5,
+            "socksProxy": proxy_,
+        }
+        options.proxy = Proxy(proxy_config)
+        return options
 
     def close(self):
         self.browser.close()
@@ -134,7 +144,7 @@ class Driver(ABC):
             username(str): A row identifier which is the username of a profile
             page_id(str): the social website type
         """
-        headers, content = self.get_cookies()
+        headers, content, method, url = self.get_cookies()
         if (headers is None) or (content is None):
             return
         profile_exist = cookieDB.select_(
@@ -146,6 +156,8 @@ class Driver(ABC):
                 {
                     "headers": headers,
                     "content": content,
+                    "method": method,
+                    "url": url,
                     "last_update": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "number_of_executions": 0,
                 },
@@ -161,6 +173,8 @@ class Driver(ABC):
                     page_id=page_id,
                     headers=headers,
                     content=content,
+                    method=method,
+                    url=url,
                     profile_id=username,
                     robot_id=None,
                     device_id=DeviceId.DESKTOP.value,

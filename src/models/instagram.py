@@ -1,6 +1,8 @@
 import time
+from collections import deque
 from contextlib import suppress
 from random import randint
+from typing import Tuple
 
 from dotenv import load_dotenv
 from log.logger import Color, Logs
@@ -27,16 +29,22 @@ class Instagram(Driver):
     username: str
     password: str
     color: Color
+    dq: deque
     user_selector: str = "input[name='username']"
     password_selector: str = "input[name='password']"
     checker_selector: str = "//div[@class='_aac4 _aac5 _aac6']"
 
     def __init__(
-        self, username: str, password: str, proxy: str, color: Color = Color.PURPLE
+        self,
+        username: str,
+        password: str,
+        proxy: str,
+        dq: deque,
+        color: Color = Color.PURPLE,
     ):
         profile_path = get_profile_path(ROOTE_PROFILE, username)
 
-        Driver.__init__(self, profile_path, proxy)
+        Driver.__init__(self, dq, profile_path, proxy)
         self.username = username
         self.password = password
         self.color = color
@@ -85,14 +93,28 @@ class Instagram(Driver):
         # cookies = self.browser.get_cookies()
         # names = json_extract(cookies, "name")
         # values = json_extract(cookies, "value")
-        # return ";".join([f"{name}={value}" for name, value in zip(names, values)])
+        # return "
+        # .join([f"{name}={value}" for name, value in zip(names, values)])
         with suppress(IndexError):
-            for e in self.browser.requests:
-                if "/api" in e.path:
-                    headers = dict(e.headers._headers)
-                    content = e.params
-                    return headers, content
-        return None, None
+            for e in self.mitmdumps:
+                if (
+                    "api/v1/collections/list/?collection_types" in e.request.path
+                    and e.response.status_code == 200
+                ):
+                    content = e.request.content.decode()
+                    method = e.request.method
+                    url = e.request.pretty_url
+                    headers = self.parse_headers(e.request.headers.fields)
+                    return (headers, content, method, url)
+        return None, None, None, None
+
+    @staticmethod
+    def parse_headers(headers: Tuple[tuple]):
+        decoded_headers = [[e.decode() for e in header] for header in headers]
+        cookies = ";".join([v for e, v in decoded_headers if e == "cookie"])
+        converted_heads = dict(decoded_headers)
+        converted_heads["cookie"] = cookies
+        return converted_heads
 
     def is_connected(self):
         timeout = DELAY

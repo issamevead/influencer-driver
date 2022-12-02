@@ -1,6 +1,5 @@
+mitmproxy
 selenium
-selenium-wire
-python-dotenv
 pymongo
 sqlalchemy 
 pandas
