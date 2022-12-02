@@ -1,0 +1,12 @@
+Loop 1
+    get profile (credentials + proxy)
+    set proxychains config
+    Process 1
+        launch python program
+        if sys.exit(0)
+        End Process 1
+        if sys.exit(1)
+        Update profile with appropriate data (Blocked, proxy not working etc ...)    
+    End Process 1
+    
+End Loop 1

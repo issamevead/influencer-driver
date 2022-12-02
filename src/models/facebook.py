@@ -1,5 +1,7 @@
+from collections import deque
 from contextlib import suppress
 from random import randint
+from typing import Tuple
 
 from dotenv import load_dotenv
 from log.logger import Color, Logs
@@ -16,9 +18,7 @@ load_dotenv()
 
 DELAY = int(get_env("DELAY"))
 ROOT_PROFILE = get_env("FFPROFILE")
-
 URL = "https://www.facebook.com/"
-DELAY = 8
 
 
 logs = Logs()
@@ -37,15 +37,11 @@ class Facebook(Driver):
         username: str,
         password: str,
         proxy: str,
+        dq: deque,
         color: Color = Color.LIGHTBLUE,
     ):
         profile_path = get_profile_path(ROOT_PROFILE, username)
-
-        Driver.__init__(
-            self,
-            profile_path,
-            proxy,
-        )
+        Driver.__init__(self, dq, profile_path, proxy)
 
         self.username = username
         self.password = password
@@ -116,7 +112,7 @@ class Facebook(Driver):
                     )
                 )
                 return True
-            timeout += 2
+            timeout += 20
         return False
 
     def get_cookies(self) -> str:
@@ -128,26 +124,30 @@ class Facebook(Driver):
         EXPECTED_COOKIES = ("c_user", "xs", "datr")
         cookies = self.browser.get_cookies()
         names = json_extract(cookies, "name")
-        values = json_extract(cookies, "value")
-        initial_cookies = [f"{name}={value}" for name, value in zip(names, values)]
+
+        # values = json_extract(cookies, "value")
+        # initial_cookies = [f"{name}={value}" for name, value in zip(names, values)]
 
         cond = [name in names for name in EXPECTED_COOKIES]
         if not all(cond):
-            return None
+            return None, None, None, None
         with suppress(IndexError):
-            # body_contain_fb_dtsg = [
-            #     b.body for b in self.browser.requests if b"fb_dtsg" in b.body
-            # ]
-            # fb_dtsg = [
-            #     r for r in body_contain_fb_dtsg[0].decode().split("&") if "fb_dtsg" in r
-            # ][0]
-            # initial_cookies = initial_cookies + [fb_dtsg]
-            for e in self.browser.requests:
-                if e.path == "/api/graphql/":
-                    headers = dict(e.headers._headers)
-                    content = e.params
-                    return headers, content
-        return None, None
+            for e in self.mitmdumps:
+                if "/api/graphql" in e.request.path:
+                    content = e.request.content.decode()
+                    method = e.request.method
+                    url = e.request.pretty_url
+                    headers = self.parse_headers(e.request.headers.fields)
+                    return (headers, content, method, url)
+        return None, None, None, None
+
+    @staticmethod
+    def parse_headers(headers: Tuple[tuple]):
+        decoded_headers = [[e.decode() for e in header] for header in headers]
+        cookies = ";".join([v for e, v in decoded_headers if e == "cookie"])
+        converted_heads = dict(decoded_headers)
+        converted_heads["cookie"] = cookies
+        return converted_heads
 
     def run(self):
         """Run browser and connect to facebook
