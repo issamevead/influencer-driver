@@ -22,7 +22,7 @@ class Addon(object):
         pass
 
     def response(self, flow):
-        # print(flow.request)
+        print(flow.request)
         self.dq.append(flow)
 
 
@@ -32,17 +32,15 @@ def run_mitm(dq: deque):
             listen_host=MITMHOST, listen_port=MITMPORT, confdir=CERT_PATH, http2=True
         )
         asyncio.set_event_loop(asyncio.new_event_loop())
-        # r = asyncio.new_event_loop()
-        # r.run_forever()
-        m = DumpMaster(options, with_termlog=False, with_dumper=False)
+        dumpmaster = DumpMaster(options, with_termlog=True, with_dumper=False)
         ad = Addon(dq)
-        m.addons.add(ad)
+        dumpmaster.addons.add(ad)
         dq = ad.dq
 
         try:
             log.info(f"mitmproxy start")
-            await m.run()
+            await dumpmaster.run()
         except KeyboardInterrupt:
-            m.shutdown()
+            dumpmaster.shutdown()
 
     asyncio.run(process(dq=dq))

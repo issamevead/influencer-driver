@@ -18,7 +18,7 @@ from pymongo.errors import (
     WriteError,
 )
 from utils.util import get_env
-from log.logger import Logs, Color
+from log.logger import Logs
 
 load_dotenv()
 log = Logs()

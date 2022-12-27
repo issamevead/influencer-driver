@@ -1,3 +1,4 @@
+from copy import deepcopy
 import time
 from collections import deque
 from contextlib import suppress
@@ -12,11 +13,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from utils.enums import PageId
 from utils.util import get_env, get_profile_path, human_writing
-
 from models.driver import Driver
 
 load_dotenv()
-
 DELAY = int(get_env("DELAY"))
 ROOTE_PROFILE = get_env("FFPROFILE")
 
@@ -62,6 +61,11 @@ class Instagram(Driver):
     def connect(self):
         timeout = DELAY
         for _ in range(3):
+
+            if "/challenge/" in self.browser.current_url:
+                self.blocked = True
+                return False
+
             with suppress(TimeoutException):
                 WebDriverWait(self.browser, DELAY).until(
                     EC.presence_of_element_located(
@@ -90,23 +94,21 @@ class Instagram(Driver):
         return False
 
     def get_cookies(self):
-        # cookies = self.browser.get_cookies()
-        # names = json_extract(cookies, "name")
-        # values = json_extract(cookies, "value")
-        # return "
-        # .join([f"{name}={value}" for name, value in zip(names, values)])
         with suppress(IndexError):
-            for e in self.mitmdumps:
-                if (
-                    "api/v1/collections/list/?collection_types" in e.request.path
-                    and e.response.status_code == 200
-                ):
-                    content = e.request.content.decode()
-                    method = e.request.method
-                    url = e.request.pretty_url
-                    headers = self.parse_headers(e.request.headers.fields)
-                    return (headers, content, method, url)
-        return None, None, None, None
+            mitmdumps = deepcopy(self.mitmdumps)
+            needed_call = [
+                e
+                for e in mitmdumps
+                if "www.instagram.com" == e.request.authority
+                and e.response.status_code == 200
+            ][-1]
+            if needed_call:
+                content = needed_call.request.content.decode()
+                method = needed_call.request.method
+                url = needed_call.request.pretty_url
+                headers = self.parse_headers(needed_call.request.headers.fields)
+                return (headers, content, method, url)
+        return (None, None, None, None)
 
     @staticmethod
     def parse_headers(headers: Tuple[tuple]):
@@ -144,7 +146,7 @@ class Instagram(Driver):
             self.quit()
             logs.info("Next update will until you unclock it")
             return
-        time.sleep(10)
+        # time.sleep(10)
         self.human_scroll(randint(45, 60), 2)
         self.update_local_cookie()
         self.update_mg_cookie(self.username, PageId.INSTAGRAM.value)

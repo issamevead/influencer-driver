@@ -104,6 +104,12 @@ class Facebook(Driver):
             bool: True if connected else False based on Cheacker Selector
         """
         timeout = DELAY
+        if (
+            "checkpoint" in self.browser.current_url
+            or "privacy_mutation_token" in self.browser.current_url
+        ):
+            self.blocked = True
+            return False
         for _ in range(3):
             with suppress(TimeoutException):
                 WebDriverWait(self.browser, timeout).until(
@@ -124,10 +130,6 @@ class Facebook(Driver):
         EXPECTED_COOKIES = ("c_user", "xs", "datr")
         cookies = self.browser.get_cookies()
         names = json_extract(cookies, "name")
-
-        # values = json_extract(cookies, "value")
-        # initial_cookies = [f"{name}={value}" for name, value in zip(names, values)]
-
         cond = [name in names for name in EXPECTED_COOKIES]
         if not all(cond):
             return None, None, None, None
@@ -139,7 +141,7 @@ class Facebook(Driver):
                     url = e.request.pretty_url
                     headers = self.parse_headers(e.request.headers.fields)
                     return (headers, content, method, url)
-        return None, None, None, None
+        return (None, None, None, None)
 
     @staticmethod
     def parse_headers(headers: Tuple[tuple]):

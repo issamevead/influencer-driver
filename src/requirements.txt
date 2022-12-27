@@ -4,3 +4,4 @@ pymongo
 sqlalchemy 
 pandas
 python-dotenv
+requests[socks]

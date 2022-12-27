@@ -22,7 +22,7 @@ load_dotenv()
 FIREFOX_PATH = get_env("FIREFOX_PATH")
 DRIVER_PATH = get_env("DRIVER_PATH")
 
-cookieDB = TextMongoDatabase(get_env("DATABASE_COLLECTION_SOURCE"))
+cookieDB = TextMongoDatabase(get_env("DATABASE_COLLECTION_NAME"))
 logs = Logs()
 
 
@@ -96,7 +96,7 @@ class Driver(ABC):
             "profile.default_content_setting_values.notifications", 1
         )
         # set proxy for mitmproxy server.
-        self.set_http_proxy(options, "localhost", 4141)
+        self.set_http_proxy(options, "127.0.0.1", 4141)
         return options
 
     def set_socks_proxy(self, options: webdriver.FirefoxOptions, proxy_: str):
@@ -125,14 +125,17 @@ class Driver(ABC):
         self.browser.service.process.send_signal(15)
 
     def update_local_cookie(self):
-        if not path_exist(self.profile_path):
-            os.mkdir(self.profile_path)
-        profile = Path(self.browser.caps.get("moz:profile"))
-        cookie_file = profile / "cookies.sqlite"
-        shutil.copy(cookie_file, Path(self.profile_path) / "cookies.sqlite")
-        logs.info(
-            f"{self.color.format(self.__class__.__name__)} | profile {Color.DARK_YELLOW.format(self.username)} locally updated"
-        )
+        try:
+            if not path_exist(self.profile_path):
+                os.mkdir(self.profile_path)
+            profile = Path(self.browser.caps.get("moz:profile"))
+            cookie_file = profile / "cookies.sqlite"
+            shutil.copy(cookie_file, Path(self.profile_path) / "cookies.sqlite")
+            logs.info(
+                f"{self.color.format(self.__class__.__name__)} | profile {Color.DARK_YELLOW.format(self.username)} locally updated"
+            )
+        except PermissionError as e:
+            logs.warn("error: %s: %r" % (e.strerror, e.filename))
 
     def blocked_status(self, username: str):
         """Update status as blocked for a given username"""

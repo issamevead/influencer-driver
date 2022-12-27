@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import signal
 import time
@@ -128,3 +129,38 @@ def kill_process(process: str):
     with suppress(PermissionError):
         for pid in os.popen("pgrep " + process).read().splitlines():
             os.kill(int(pid), signal.SIGTERM)
+
+
+def get_profiles(social_media: str, profile_credts_path: str) -> list:
+    """Get the profiles from the database
+
+    Args:
+        social_media (str): social media name
+            >>> example "instagram" or "facebook"
+        profiles_path(str): path to credential of s.m
+    Returns:
+        list: get list of all account of specified socila media
+    """
+    try:
+        with Path(profile_credts_path).open(encoding="UTF-8") as source:
+            return json.load(source)[social_media]
+    except (FileNotFoundError, json.decoder.JSONDecodeError) as e:
+        print(e)
+        return []
+
+
+def get_item(data: list, value: str, key: str) -> dict:
+    """Get the item from the database
+
+    Args:
+        data (list): list of dictionnary
+        value (str): value of the search
+        key (str): the key of the searched value
+
+    Returns:
+        dict: the first dict satisfied the condition, otherwise none
+    """
+    for e in data:
+        if e.get(key) == value:
+            return e
+    return None

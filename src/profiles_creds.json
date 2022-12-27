@@ -24,13 +24,8 @@
     "facebook": [
         {
             "username": "marouanezkaoui@gmail.com",
-            "password": "S89z5yLkWmjyMpvT@F",
-            "proxy": null
-        },
-        {
-            "username": "hichamhmad45@gmail.com",
-            "password": "PEfLhw2@6h7Vt9jc2",
-            "proxy": null
+            "password": "S89z5yLkW@mjyMpvT",
+            "proxy": "10.10.8.108:8081"
         }
     ]
 }
